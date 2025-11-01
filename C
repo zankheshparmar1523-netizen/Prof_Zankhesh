@@ -1,0 +1,199 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+struct Item {
+    int id;
+    char name[50];
+    int quantity;
+    float price;
+};
+
+void addItem();
+void displayItems();
+void searchItem();
+void updateItem();
+void deleteItem();
+
+int main() {
+    int choice;
+
+    while (1) {
+        printf("\n===== INVENTORY MANAGEMENT SYSTEM =====\n");
+        printf("1. Add Item\n");
+        printf("2. Display All Items\n");
+        printf("3. Search Item\n");
+        printf("4. Update Item\n");
+        printf("5. Delete Item\n");
+        printf("6. Exit\n");
+        printf("Enter your choice: ");
+        scanf("%d", &choice);
+
+        switch (choice) {
+            case 1: addItem(); break;
+            case 2: displayItems(); break;
+            case 3: searchItem(); break;
+            case 4: updateItem(); break;
+            case 5: deleteItem(); break;
+            case 6: exit(0);
+            default: printf("Invalid choice! Please try again.\n");
+        }
+    }
+    return 0;
+}
+
+void addItem() {
+    FILE *fp;
+    struct Item item;
+
+    fp = fopen("inventory.txt", "a");
+    if (fp == NULL) {
+        printf("Error opening file!\n");
+        return;
+    }
+
+    printf("\nEnter Item ID: ");
+    scanf("%d", &item.id);
+    printf("Enter Item Name: ");
+    getchar(); // to consume newline
+    fgets(item.name, sizeof(item.name), stdin);
+    item.name[strcspn(item.name, "\n")] = '\0';
+    printf("Enter Quantity: ");
+    scanf("%d", &item.quantity);
+    printf("Enter Price: ");
+    scanf("%f", &item.price);
+
+    fwrite(&item, sizeof(struct Item), 1, fp);
+    fclose(fp);
+
+    printf("\nItem added successfully!\n");
+}
+
+void displayItems() {
+    FILE *fp;
+    struct Item item;
+    fp = fopen("inventory.txt", "r");
+
+    if (fp == NULL) {
+        printf("No items found.\n");
+        return;
+    }
+
+    printf("\n%-10s %-20s %-10s %-10s\n", "ID", "Name", "Quantity", "Price");
+    printf("-------------------------------------------------\n");
+
+    while (fread(&item, sizeof(struct Item), 1, fp)) {
+        printf("%-10d %-20s %-10d $%-10.2f\n", item.id, item.name, item.quantity, item.price);
+    }
+
+    fclose(fp);
+}
+
+void searchItem() {
+    FILE *fp;
+    struct Item item;
+    int id, found = 0;
+
+    printf("Enter Item ID to search: ");
+    scanf("%d", &id);
+
+    fp = fopen("inventory.txt", "r");
+    if (fp == NULL) {
+        printf("Error opening file!\n");
+        return;
+    }
+
+    while (fread(&item, sizeof(struct Item), 1, fp)) {
+        if (item.id == id) {
+            printf("\nItem Found:\n");
+            printf("ID: %d\nName: %s\nQuantity: %d\nPrice: $%.2f\n",
+                   item.id, item.name, item.quantity, item.price);
+            found = 1;
+            break;
+        }
+    }
+
+    if (!found)
+        printf("Item not found!\n");
+
+    fclose(fp);
+}
+
+void updateItem() {
+    FILE *fp, *temp;
+    struct Item item;
+    int id, found = 0;
+
+    printf("Enter Item ID to update: ");
+    scanf("%d", &id);
+
+    fp = fopen("inventory.txt", "r");
+    temp = fopen("temp.txt", "w");
+
+    if (fp == NULL || temp == NULL) {
+        printf("Error opening file!\n");
+        return;
+    }
+
+    while (fread(&item, sizeof(struct Item), 1, fp)) {
+        if (item.id == id) {
+            printf("Enter new name: ");
+            getchar();
+            fgets(item.name, sizeof(item.name), stdin);
+            item.name[strcspn(item.name, "\n")] = '\0';
+            printf("Enter new quantity: ");
+            scanf("%d", &item.quantity);
+            printf("Enter new price: ");
+            scanf("%f", &item.price);
+            found = 1;
+        }
+        fwrite(&item, sizeof(struct Item), 1, temp);
+    }
+
+    fclose(fp);
+    fclose(temp);
+
+    remove("inventory.txt");
+    rename("temp.txt", "inventory.txt");
+
+    if (found)
+        printf("Item updated successfully!\n");
+    else
+        printf("Item not found!\n");
+}
+
+void deleteItem() {
+    FILE *fp, *temp;
+    struct Item item;
+    int id, found = 0;
+
+    printf("Enter Item ID to delete: ");
+    scanf("%d", &id);
+
+    fp = fopen("inventory.txt", "r");
+    temp = fopen("temp.txt", "w");
+
+    if (fp == NULL || temp == NULL) {
+        printf("Error opening file!\n");
+        return;
+    }
+
+    while (fread(&item, sizeof(struct Item), 1, fp)) {
+        if (item.id != id) {
+            fwrite(&item, sizeof(struct Item), 1, temp);
+        } else {
+            found = 1;
+        }
+    }
+
+    fclose(fp);
+    fclose(temp);
+
+    remove("inventory.txt");
+    rename("temp.txt", "inventory.txt");
+
+    if (found)
+        printf("Item deleted successfully!\n");
+    else
+        printf("Item not found!\n");
+}
